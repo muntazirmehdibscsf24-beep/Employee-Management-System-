@@ -1,12 +1,10 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
 import "./User.css"
 import "./App.css"
 
 function User() {
-  const { user: currentUser, logout, isAdmin, token } = useAuth();
   const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,13 +15,7 @@ function User() {
 
   useEffect(() => {
     setLoading(true);
-    // Get token from context or localStorage
-    const authToken = token || localStorage.getItem('token');
-    axios.get("http://localhost:8000/api/employees", {
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
-    })
+    axios.get("http://127.0.0.1:8000/api/employees")
       .then(result => {
         setEmployees(result.data);
         setError('');
@@ -34,7 +26,7 @@ function User() {
         console.error('Error fetching employees:', err);
       })
       .finally(() => setLoading(false));
-  }, [token])
+  }, [])
 
   const handleSearch = (e) => {
     const searchValue = e.target.value.toLowerCase();
@@ -58,13 +50,8 @@ function User() {
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
-      const authToken = token || localStorage.getItem('token');
-      axios.delete(`http://localhost:8000/api/employees/${id}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      })
-        .then((res) => {
+      axios.delete(`http://127.0.0.1:8000/api/employees/${id}`)
+        .then(() => {
           setEmployees(prev => prev.filter(u => u._id !== id));
           setFilteredEmployees(prev => prev.filter(u => u._id !== id));
         })
@@ -74,11 +61,6 @@ function User() {
         });
     }
   }
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   if (loading) {
     return (
@@ -102,15 +84,6 @@ function User() {
     );
   }
 
-  // Only allow search by name for users
-  const searchOptions = isAdmin() ? [
-    { value: 'name', label: 'Search by Name' },
-    { value: 'department', label: 'Search by Department' },
-    { value: 'designation', label: 'Search by Designation' }
-  ] : [
-    { value: 'name', label: 'Search by Name' }
-  ];
-
   return (
     <div className="container">
       <div className="heading">
@@ -119,16 +92,15 @@ function User() {
           <div className="d-flex gap-3">
             <div className="search-container">
               <div className="input-group">
-                <select 
-                  className="form-select" 
-                  value={searchType} 
+                <select
+                  className="form-select"
+                  value={searchType}
                   onChange={(e) => setSearchType(e.target.value)}
                   style={{ width: '150px' }}
-                  disabled={!isAdmin()}
                 >
-                  {searchOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
+                  <option value="name">Search by Name</option>
+                  <option value="department">Search by Department</option>
+                  <option value="designation">Search by Designation</option>
                 </select>
                 <input
                   type="text"
@@ -142,18 +114,13 @@ function User() {
                 </span>
               </div>
             </div>
-            {isAdmin() && (
-              <Link to="/create" className="btn btn-primary">
-                <i className="fas fa-plus me-2"></i>Add Employee
-              </Link>
-            )}
-            <button className="btn btn-primary" onClick={handleLogout} style={{marginLeft: '10px'}}>
-              <i className="fas fa-sign-out-alt me-2"></i>Logout
-            </button>
+            <Link to="/create" className="btn btn-primary">
+              <i className="fas fa-plus me-2"></i>Add Employee
+            </Link>
           </div>
         </div>
       </div>
-      
+
       <div className="table-responsive">
         <table className="table">
           <thead>
@@ -166,7 +133,7 @@ function User() {
               <th scope="col">Designation</th>
               <th scope="col">Salary</th>
               <th scope="col">Joined</th>
-              {isAdmin() && <th scope="col">Actions</th>}
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -180,26 +147,24 @@ function User() {
                 <td>{employee.designation}</td>
                 <td>${employee.salary ? employee.salary.toLocaleString() : '-'}</td>
                 <td>{employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : '-'}</td>
-                {isAdmin() && (
-                  <td>
-                    <div className="action-btns">
-                      <Link 
-                        to={`/update/${employee._id}`} 
-                        className="btn btn-edit btn-sm"
-                        title="Edit"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </Link>
-                      <button 
-                        onClick={() => handleDelete(employee._id)} 
-                        className="btn btn-delete btn-sm"
-                        title="Delete"
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                )}
+                <td>
+                  <div className="action-btns">
+                    <Link
+                      to={`/update/${employee._id}`}
+                      className="btn btn-edit btn-sm"
+                      title="Edit"
+                    >
+                      <i className="fas fa-edit"></i>
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(employee._id)}
+                      className="btn btn-delete btn-sm"
+                      title="Delete"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -207,7 +172,12 @@ function User() {
       </div>
       {filteredEmployees.length === 0 && searchTerm !== '' && (
         <div className="alert alert-info mt-4">
-          No results found for "{searchTerm}" in {searchType === 'name' ? 'names' : searchType === 'department' ? 'departments' : 'designations'}
+          No results found for "{searchTerm}"
+        </div>
+      )}
+      {filteredEmployees.length === 0 && searchTerm === '' && (
+        <div className="alert alert-info mt-4">
+          No employees found. Click "Add Employee" to add one.
         </div>
       )}
     </div>

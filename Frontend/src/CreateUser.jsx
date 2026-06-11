@@ -28,25 +28,18 @@ function CreateUser() {
 
   const Submit = (e) => {
     e.preventDefault();
-    // Validate required fields
     if (!employeeName || !email || !department || !designation) {
       setError('Please fill in all required fields');
       return;
     }
-    // Format the salary as number if provided
     const salaryValue = salary ? Number(salary) : null;
-    setError(''); // Clear any previous error
-    const token = localStorage.getItem('token');
+    setError('');
     axios.post("http://localhost:8000/api/employees", {
       employeeName,
       email,
       department,
       designation,
       salary: salaryValue
-    }, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
     })
     .then(result => {
       console.log('Employee created successfully:', result.data);
@@ -96,9 +89,6 @@ function CreateUser() {
                 required
                 placeholder="Enter email address"
               />
-              <div id="emailHelp" className="form-text">
-                We'll never share your email with anyone else.
-              </div>
             </div>
           </div>
           <div className="row">
@@ -163,10 +153,10 @@ function CreateUser() {
           </div>
           <div className="d-flex justify-content-between">
             <button type="submit" className="btn btn-primary px-4">
-              <i className="fas fa-save me-2"></i>Save Employee
+              Save Employee
             </button>
             <Link to="/" className="btn btn-secondary px-4">
-              <i className="fas fa-arrow-left me-2"></i>Back to List
+              Back to List
             </Link>
           </div>
         </form>
